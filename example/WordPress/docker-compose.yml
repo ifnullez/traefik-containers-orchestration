@@ -1,0 +1,43 @@
+services:
+  example:
+    image: wordpress:php8.3
+    container_name: example_wp
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./html:/var/www/html
+    ports:
+      - "8081:80"
+    env_file:
+      - ./.env
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - 'traefik.http.routers.examplewp.rule=Host("example-wp.com")'
+      - "traefik.http.services.examplewp.loadbalancer.server.port=80"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: mysql:latest
+    container_name: example_wp_db
+    env_file:
+      - ./.env
+    volumes:
+      - ./data:/data
+    networks:
+      - traefik
+    command:
+      - "--skip-log-bin"
+    restart: unless-stopped
+
+volumes:
+  data: {}
+  db_data: {}
+
+networks:
+  traefik:
+    external: true
