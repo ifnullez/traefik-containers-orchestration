@@ -3,7 +3,7 @@
 ## Structure
 
 - `Makefile` - available commands to up traefik and make ssl
-- `/ssl` - config and ssl keys to enamble ssl for named hosts
+- `/ssl` - config and ssl keys to enable ssl for named hosts
   - `sites-exmaple.conf` - config to generate ssl key and cert for all NS, should be renabed to `sites.conf`,
     you can set as many NS as you wanna in file config section `alternate_names`
     Example:
