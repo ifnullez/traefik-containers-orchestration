@@ -1,6 +1,6 @@
 # Local Development Env using Traefik and Docker containers
 
-⛈️ DO NOT WORK WITH `PRIVATE RELAY` FROM APPLE!
+⛈️ NOT WORKING WITH `PRIVATE RELAY` FROM APPLE!
 
 ## Structure
 
