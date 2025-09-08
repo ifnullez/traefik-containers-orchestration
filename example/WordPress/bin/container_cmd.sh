@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 get_container_cmd() {
     if command -v podman &>/dev/null; then

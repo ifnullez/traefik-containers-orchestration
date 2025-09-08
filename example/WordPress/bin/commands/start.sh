@@ -1,14 +1,22 @@
 #!/bin/bash
+set -e
 
-source ./bin/container_cmd.sh
-source ./bin/network.sh
+source ./container_cmd.sh
+source ./compose_cmd.sh
+source ./network.sh
 
 CONTAINER_CMD=$(get_container_cmd)
+COMPOSE_CMD=$(get_compose_cmd "$CONTAINER_CMD")
 
-manage_network $CONTAINER_CMD
-
-if [[ "$CONTAINER_CMD" == "error" ]]; then
-    echo "Neither Podman nor Docker is installed. Exiting..."
+if [[ "$CONTAINER_CMD" == "error" || "$COMPOSE_CMD" == "error" ]]; then
+    echo "Neither Podman nor Docker compose is available. Exiting..."
     exit 1
 fi
-"$CONTAINER_CMD-compose" up --build -d
+
+# створюємо/перевіряємо мережу
+manage_network "$CONTAINER_CMD"
+
+# запускаємо контейнери
+$COMPOSE_CMD up --build -d
+
+echo "Containers started successfully!"

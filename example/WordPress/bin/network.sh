@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 NETWORK_NAME="traefik"
 
@@ -10,7 +11,6 @@ manage_network() {
         exit 1
     fi
 
-    # Check if the network exists
     if "$CONTAINER_CMD" network ls | grep -q "$NETWORK_NAME"; then
         echo "Network '$NETWORK_NAME' already exists."
     else

@@ -1,15 +1,26 @@
+SHELL := /bin/bash
+
 start:
-	sh ./bin/commands/start.sh
+	@echo "Starting Traefik..."
+	@bash ./bin/commands/start.sh
+
 build:
-	sh ./bin/commands/update_cert.sh
-	sh ./bin/commands/trust_cert.sh
-	sh ./bin/commands/update_hosts.sh
-	sh ./bin/commands/start.sh
+	@echo "Updating SSL certificates..."
+	@bash ./bin/commands/update_cert.sh
+	@bash ./bin/commands/trust_cert.sh
+	@bash ./bin/commands/update_hosts.sh
+	@$(MAKE) start
+
 update_hosts:
-	sh ./bin/commands/update_hosts.sh
+	@echo "Updating hosts file..."
+	@bash ./bin/commands/update_hosts.sh
+
 update_ssl:
-	sh ./bin/commands/update_cert.sh
-	sh ./bin/commands/trust_cert.sh
-	sh ./bin/commands/update_hosts.sh
+	@echo "Updating SSL certificates..."
+	@bash ./bin/commands/update_cert.sh
+	@bash ./bin/commands/trust_cert.sh
+	@$(MAKE) update_hosts
+
 trust_ssl:
-	sh ./bin/commands/trust_cert.sh
+	@echo "Trusting SSL certificate..."
+	@bash ./bin/commands/trust_cert.sh

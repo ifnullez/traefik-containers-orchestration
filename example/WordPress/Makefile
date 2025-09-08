@@ -1,8 +1,17 @@
+SHELL := /bin/bash
+
 start:
-	sh ./bin/commands/start.sh
+	@echo "Starting containers..."
+	@bash ./bin/commands/start.sh
+
 stop:
-	sh ./bin/commands/stop.sh
+	@echo "Stopping containers..."
+	@bash ./bin/commands/stop.sh
+
 down:
-	sh ./bin/commands/down.sh
+	@echo "Stopping and removing containers..."
+	@bash ./bin/commands/down.sh
+
 clean:
-	sh ./bin/commands/clean.sh
+	@echo "Pruning images, containers, and networks..."
+	@bash ./bin/commands/clean.sh
