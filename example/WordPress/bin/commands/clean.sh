@@ -1,7 +1,9 @@
 #!/bin/bash
 set -e
 
-source ./container_cmd.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.."
+
+source "$SCRIPT_DIR/container_cmd.sh"
 
 CONTAINER_CMD=$(get_container_cmd)
 

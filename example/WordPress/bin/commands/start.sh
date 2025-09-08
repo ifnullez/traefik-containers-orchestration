@@ -1,9 +1,11 @@
 #!/bin/bash
 set -e
 
-source ./container_cmd.sh
-source ./compose_cmd.sh
-source ./network.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.."
+
+source "$SCRIPT_DIR/container_cmd.sh"
+source "$SCRIPT_DIR/compose_cmd.sh"
+source "$SCRIPT_DIR/network.sh"
 
 CONTAINER_CMD=$(get_container_cmd)
 COMPOSE_CMD=$(get_compose_cmd "$CONTAINER_CMD")
