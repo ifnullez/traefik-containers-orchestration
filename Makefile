@@ -3,7 +3,9 @@ SHELL := /bin/bash
 start:
 	@echo "Starting Traefik..."
 	@bash ./bin/commands/start.sh
-
+stop:
+	@echo "Stopping Traefik..."
+	@bash ./bin/commands/stop.sh
 build:
 	@echo "Updating SSL certificates..."
 	@bash ./bin/commands/update_cert.sh
