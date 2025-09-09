@@ -7,7 +7,10 @@ start:
 stop:
 	@echo "Stopping containers..."
 	@bash ./bin/commands/stop.sh
-
+restart:
+	@echo "Restarting containers..."
+	@bash ./bin/commands/stop.sh
+	@bash ./bin/commands/start.sh
 down:
 	@echo "Stopping and removing containers..."
 	@bash ./bin/commands/down.sh
