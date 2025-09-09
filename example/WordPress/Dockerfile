@@ -1,8 +1,7 @@
-FROM wordpress:php8.3
+FROM wordpress:php8.3-apache
 
-# Enable apache
-RUN a2enmod headers
-RUN a2enmod rewrite
+# Enable apache modules
+RUN a2enmod headers rewrite
 
 # Set timezone in php.ini
 # RUN echo "date.timezone=UTC" > /usr/local/etc/php/conf.d/timezone.ini
