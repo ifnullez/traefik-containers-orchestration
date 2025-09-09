@@ -1,6 +1,6 @@
 services:
   example:
-    image: wordpress:php8.3
+    image: wordpress:php8.3-apache
     container_name: example_wp
     build:
       context: .

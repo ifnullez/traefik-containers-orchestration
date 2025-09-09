@@ -12,7 +12,10 @@ build:
 	@bash ./bin/commands/trust_cert.sh
 	@bash ./bin/commands/update_hosts.sh
 	@$(MAKE) start
-
+restart:
+	@echo "Restarting containers..."
+	@bash ./bin/commands/stop.sh
+	@bash ./bin/commands/start.sh
 update_hosts:
 	@echo "Updating hosts file..."
 	@bash ./bin/commands/update_hosts.sh
