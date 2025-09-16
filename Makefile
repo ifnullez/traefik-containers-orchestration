@@ -14,8 +14,8 @@ build:
 	@$(MAKE) start
 restart:
 	@echo "Restarting containers..."
-	@bash ./bin/commands/stop.sh
-	@bash ./bin/commands/start.sh
+	@$(MAKE) stop
+	@$(MAKE) start
 update_hosts:
 	@echo "Updating hosts file..."
 	@bash ./bin/commands/update_hosts.sh
