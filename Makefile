@@ -8,9 +8,8 @@ stop:
 	@bash ./bin/commands/stop.sh
 build:
 	@echo "Updating SSL certificates..."
-	@bash ./bin/commands/update_cert.sh
-	@bash ./bin/commands/trust_cert.sh
-	@bash ./bin/commands/update_hosts.sh
+	@$(MAKE) update_ssl
+	@$(MAKE) update_hosts
 	@$(MAKE) start
 restart:
 	@echo "Restarting containers..."
