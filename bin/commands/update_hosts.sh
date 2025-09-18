@@ -15,7 +15,7 @@ fi
 # get all hosts names from sites.conf [ alternate_names ] section
 DNS_ENTRIES=$(awk '/\[ alternate_names \]/ {flag=1; next} /^\[/ {flag=0} flag && /^DNS/ {print $NF}' "$INPUT_FILE")
 
-# Створюємо бекап hosts
+# Make backup of original hosts file
 sudo cp /etc/hosts /etc/hosts.bak
 
 # removing old Traefik block from /etc/hosts

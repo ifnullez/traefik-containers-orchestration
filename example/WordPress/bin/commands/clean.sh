@@ -13,7 +13,9 @@ if [[ "$CONTAINER_CMD" == "error" ]]; then
 fi
 
 $CONTAINER_CMD image prune -f
+$CONTAINER_CMD volume prune -f
 $CONTAINER_CMD network prune -f
 $CONTAINER_CMD container prune -f
+$CONTAINER_CMD system prune -f
 
 echo "Cleanup completed!"
