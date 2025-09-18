@@ -6,6 +6,9 @@ start:
 stop:
 	@echo "Stopping Traefik..."
 	@bash ./bin/commands/stop.sh
+down:
+	@echo "Down Traefik containers..."
+	@bash ./bin/commands/down.sh
 build:
 	@echo "Updating SSL certificates..."
 	@$(MAKE) update_ssl
