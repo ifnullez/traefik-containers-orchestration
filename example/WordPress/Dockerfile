@@ -1,4 +1,4 @@
-FROM wordpress:php8.3-apache
+FROM wordpress:php8.3
 
 # Enable apache modules
 RUN a2enmod headers rewrite
@@ -45,5 +45,5 @@ ENV PATH=$VOLTA_HOME/bin:$PATH
 RUN curl https://get.volta.sh | bash
 
 # Install Memcached PHP extension with correct libmemcached path
-# RUN pecl list | grep -q memcached || pecl install memcached \
-#     && cat /usr/local/etc/php/conf.d/memcached.ini | grep -q memcached.so || echo extension=memcached.so >> /usr/local/etc/php/conf.d/memcached.ini
+RUN pecl list | grep -q memcached || pecl install memcached \
+    && cat /usr/local/etc/php/conf.d/memcached.ini | grep -q memcached.so || echo extension=memcached.so >> /usr/local/etc/php/conf.d/memcached.ini
