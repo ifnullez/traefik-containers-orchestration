@@ -12,6 +12,16 @@ services:
       - "8081:80"
     env_file:
       - ./.env
+    environment:
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', 'https://${ROOT_URL}');
+        define('WP_SITEURL', 'https://${ROOT_URL}');
+        define('WP_DEBUG', ${WORDPRESS_DEBUG});
+        define('WP_DEBUG_DISPLAY', ${WORDPRESS_DEBUG_DISPLAY});
+        define('WP_DEBUG_LOG', ${WORDPRESS_DEBUG_LOG});
+        define('WP_CACHE', ${WORDPRESS_CACHE});
+        define('WP_ENVIRONMENT_TYPE', '${WORDPRESS_ENVIRONMENT_TYPE}');
+        define('WP_DEVELOPMENT_MODE', '${WORDPRESS_DEVELOPMENT_MODE}');
     networks:
       - traefik
     labels:
