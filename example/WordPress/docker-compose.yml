@@ -8,6 +8,7 @@ services:
     volumes:
       - ./html:/var/www/html
       - ./.env:/var/www/.env:ro
+      - ./config/php/php.ini:/usr/local/etc/php/conf.d/000-global.ini
     ports:
       - "8081:80"
     env_file:
