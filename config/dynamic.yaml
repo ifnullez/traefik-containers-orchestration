@@ -3,9 +3,17 @@ global:
   sendAnonymousUsage: false
 
 tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: "/etc/traefik/ssl/sites.crt"
+        keyFile: "/etc/traefik/ssl/sites.key"
+
   certificates:
     - certFile: "/etc/traefik/ssl/sites.crt"
       keyFile: "/etc/traefik/ssl/sites.key"
+      stores:
+        - default
 
 http:
   middlewares:
