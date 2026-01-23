@@ -1,0 +1,9 @@
+name: ${PROJECT_NAME}
+
+include:
+  - compose/base.yml
+  - compose/database.yml
+  - compose/nginx.yml
+  - compose/app.yml
+  - compose/mail.yml
+  - compose/db-manager.yml

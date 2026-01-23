@@ -30,6 +30,8 @@ awk -v start="$START_MARKER" -v end="$END_MARKER" '
     echo "$START_MARKER"
     for DNS in $DNS_ENTRIES; do
         echo "$IP_ADDRESS $DNS"
+        echo "$IP_ADDRESS db.$DNS"
+        echo "$IP_ADDRESS mail.$DNS"
     done
     echo "$END_MARKER"
 } >> "$TMP_FILE"

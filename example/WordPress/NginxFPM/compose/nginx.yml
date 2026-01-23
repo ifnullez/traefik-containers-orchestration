@@ -1,0 +1,21 @@
+services:
+  nginx:
+    container_name: "${PROJECT_NAME}_nginx"
+    image: nginx:alpine
+    volumes:
+      - ../html:/var/www/html:ro
+      - ../config/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - traefik
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${PROJECT_NAME}.rule=Host(`${ROOT_URL}`)"
+      - "traefik.http.routers.${PROJECT_NAME}.entrypoints=websecure"
+      - "traefik.http.routers.${PROJECT_NAME}.tls=true"
+      - "traefik.http.services.${PROJECT_NAME}.loadbalancer.server.port=80"
+    depends_on:
+      - app
+    extra_hosts:
+      - "${ROOT_URL}:host-gateway"
+    restart: unless-stopped

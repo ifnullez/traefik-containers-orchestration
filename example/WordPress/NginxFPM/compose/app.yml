@@ -1,0 +1,28 @@
+services:
+  app:
+    container_name: "${PROJECT_NAME}_app"
+    # image: "${APP_IMAGE}" - if not building but just getting already buit image then remove section args and uncomment that line
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        APP_IMAGE: ${APP_IMAGE}
+    volumes:
+      - ../html:/var/www/html
+      - ../config/php/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+      - ../config/php/www.conf:/usr/local/etc/php-fpm.d/www.conf:ro
+      - ../config/wordpress/wp-config-extra.php:/var/www/wp-config-extra.php:ro
+      - ../config/msmtp/msmtprc:/etc/msmtprc:ro
+    env_file:
+      - ../.env
+    environment:
+      # Only this needs to be here (multiline doesn't work in .env)
+      WORDPRESS_CONFIG_EXTRA: |
+        require_once('/var/www/wp-config-extra.php');
+    extra_hosts:
+      - "${ROOT_URL}:host-gateway"
+    networks:
+      - internal
+    depends_on:
+      - db
+    restart: unless-stopped
