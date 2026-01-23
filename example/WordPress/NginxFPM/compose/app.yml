@@ -1,7 +1,7 @@
 services:
   app:
     container_name: "${PROJECT_NAME}_app"
-    # image: "${APP_IMAGE}" - if not building but just getting already buit image then remove section args and uncomment that line
+    # image: "${APP_IMAGE}" - if you are not building but just using already built image then remove section args from build section and uncomment that line
     build:
       context: ..
       dockerfile: Dockerfile
