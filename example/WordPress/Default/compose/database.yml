@@ -1,0 +1,17 @@
+services:
+  db:
+    container_name: "${PROJECT_NAME}_db"
+    image: ${DB_IMAGE}
+    env_file:
+      - ../.env
+    volumes:
+      - db_data:/var/lib/mysql
+      - ../data:/data
+    networks:
+      - internal
+    command:
+      [
+        "--character-set-server=${DB_CHARSET}",
+        "--collation-server=${DB_COLLATE}",
+      ]
+    restart: unless-stopped

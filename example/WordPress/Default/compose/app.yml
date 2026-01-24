@@ -1,0 +1,32 @@
+services:
+  app:
+    container_name: "${PROJECT_NAME}_app"
+    # image: "${APP_IMAGE}" - if you are not building but just using already built image then remove section args from build section and uncomment that line
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        APP_IMAGE: ${APP_IMAGE}
+    volumes:
+      - ../html:/var/www/html
+      - ../config/php/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+      - ../config/wordpress/wp-config-extra.php:/var/www/wp-config-extra.php:ro
+      - ../config/msmtp/msmtprc:/etc/msmtprc:ro
+    env_file:
+      - ../.env
+    environment:
+      # Only this needs to be here (multiline doesn't work in .env)
+      WORDPRESS_CONFIG_EXTRA: |
+        require_once('/var/www/wp-config-extra.php');
+    extra_hosts:
+      - "${ROOT_URL}:host-gateway"
+    networks:
+      - traefik
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${PROJECT_NAME}.rule=Host(`${ROOT_URL}`)"
+      - "traefik.http.services.${PROJECT_NAME}.loadbalancer.server.port=80"
+    depends_on:
+      - db
+    restart: unless-stopped

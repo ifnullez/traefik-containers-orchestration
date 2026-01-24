@@ -1,0 +1,18 @@
+services:
+  adminer:
+    container_name: "${PROJECT_NAME}_adminer"
+    image: adminer:latest
+    env_file:
+      - ../.env
+    networks:
+      - internal
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${PROJECT_NAME}_adminer.rule=Host(`db.${ROOT_URL}`)"
+      - "traefik.http.routers.${PROJECT_NAME}_adminer.entrypoints=websecure"
+      - "traefik.http.routers.${PROJECT_NAME}_adminer.tls=true"
+      - "traefik.http.routers.${PROJECT_NAME}_adminer.loadbalancer.server.port=8080"
+    depends_on:
+      - db
+    restart: unless-stopped

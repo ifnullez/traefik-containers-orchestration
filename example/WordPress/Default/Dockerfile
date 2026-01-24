@@ -1,4 +1,5 @@
-FROM wordpress:php8.3
+ARG APP_IMAGE=wordpress:php8.4
+FROM ${APP_IMAGE}
 
 # Enable Apache modules
 RUN a2enmod headers rewrite
