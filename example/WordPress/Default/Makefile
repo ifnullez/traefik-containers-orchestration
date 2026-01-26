@@ -1,10 +1,13 @@
 SHELL := /bin/bash
-COMPOSE := docker compose
+COMPOSE := $(shell ./bin/compose_cmd.sh)
+
+ifeq ($(COMPOSE),error)
+	$(error Compose command not found. Install docker-compose or podman-compose)
+endif
 
 # Default containers
 APP_CONTAINER := app
 DB_CONTAINER := db
-NGINX_CONTAINER := nginx
 
 # Colors
 GREEN := \033[0;32m
@@ -19,13 +22,13 @@ ifneq ($(filter wp shell logs exec,$(firstword $(MAKECMDGOALS))),)
   $(eval $(CMD_ARGS):;@:)
 endif
 
-.PHONY: help up down restart status logs shell exec build rebuild clean wp db nginx-reload nginx-test opcache-clear
+.PHONY: help up down restart status logs shell exec build rebuild clean wp db opcache-clear
 
 # ==================== HELP ====================
 
 help: ## Show this help
 	@echo ""
-	@echo "  $(CYAN)Docker Management$(NC)"
+	@echo -e "  $(CYAN)Docker Management$(NC)"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-18s$(NC) %s\n", $$1, $$2}'
 	@echo ""
@@ -100,15 +103,6 @@ wp: ## Run WP-CLI (make wp <command>)
 		exit 1; \
 	fi
 	@docker exec -it $$($(COMPOSE) ps -q $(APP_CONTAINER)) wp $(CMD_ARGS) --allow-root
-
-# ==================== NGINX ====================
-
-nginx-reload: ## Reload nginx config
-	@docker exec $$($(COMPOSE) ps -q $(NGINX_CONTAINER)) nginx -s reload
-	@echo -e "$(GREEN)✓ Nginx reloaded$(NC)"
-
-nginx-test: ## Test nginx config
-	@docker exec $$($(COMPOSE) ps -q $(NGINX_CONTAINER)) nginx -t
 
 # ==================== PHP ====================
 

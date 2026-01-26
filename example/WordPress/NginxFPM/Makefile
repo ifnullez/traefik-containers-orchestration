@@ -1,5 +1,9 @@
 SHELL := /bin/bash
-COMPOSE := docker compose
+COMPOSE := $(shell ./bin/compose_cmd.sh)
+
+ifeq ($(COMPOSE),error)
+	$(error Compose command not found. Install docker-compose or podman-compose)
+endif
 
 # Default containers
 APP_CONTAINER := app
@@ -25,7 +29,7 @@ endif
 
 help: ## Show this help
 	@echo ""
-	@echo "  $(CYAN)Docker Management$(NC)"
+	@echo -e "  $(CYAN)Docker Management$(NC)"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-18s$(NC) %s\n", $$1, $$2}'
 	@echo ""

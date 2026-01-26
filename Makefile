@@ -1,5 +1,9 @@
 SHELL := /bin/bash
-COMPOSE := docker compose
+COMPOSE := $(shell ./bin/compose_cmd.sh)
+
+ifeq ($(COMPOSE),error)
+	$(error Compose command not found. Install docker-compose or podman-compose)
+endif
 
 # Colors
 GREEN := \033[0;32m
