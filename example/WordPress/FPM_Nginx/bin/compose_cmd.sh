@@ -11,8 +11,8 @@ get_compose_cmd() {
 
     # Podman
     if [[ "$CONTAINER_CMD" == "podman" ]]; then
-        if command -v podman-compose &>/dev/null; then
-            echo "podman-compose"
+        if command -v podman compose &>/dev/null; then
+            echo "podman compose"
         elif podman compose version &>/dev/null 2>&1; then
             echo "podman compose"
         else
