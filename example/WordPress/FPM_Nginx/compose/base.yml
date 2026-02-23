@@ -1,0 +1,10 @@
+volumes:
+  data: {}
+  db_data: {}
+
+networks:
+  traefik:
+    external: true
+  internal:
+    name: ${PROJECT_NAME}_internal
+    driver: bridge

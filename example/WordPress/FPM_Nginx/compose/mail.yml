@@ -1,0 +1,17 @@
+services:
+  mailpit:
+    container_name: "${PROJECT_NAME}_mailpit"
+    image: axllent/mailpit:latest
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    networks:
+      - internal
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${PROJECT_NAME}_mailplit.rule=Host(`mail.${ROOT_URL}`)"
+      - "traefik.http.routers.${PROJECT_NAME}_mailplit.entrypoints=websecure"
+      - "traefik.http.routers.${PROJECT_NAME}_mailplit.tls=true"
+      - "traefik.http.services.${PROJECT_NAME}_mailplit.loadbalancer.server.port=8025"
+    restart: unless-stopped
