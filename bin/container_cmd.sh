@@ -11,3 +11,8 @@ get_container_cmd() {
         return 1
     fi
 }
+
+# Run when executed directly (not sourced)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    get_container_cmd
+fi

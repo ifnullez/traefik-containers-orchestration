@@ -6,30 +6,37 @@ BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 source "$BIN_DIR/container_cmd.sh"
 source "$BIN_DIR/compose_cmd.sh"
+source "$BIN_DIR/network.sh"
 
 # ─── Usage ───────────────────────────────────────────────────────────────────
 usage() {
     cat <<EOF
-Usage: $(basename "$0") [OPTIONS]
-
-Stops running containers without removing them. Use 'start' to restart them.
+Usage: $(basename "$0") [OPTIONS] [-- BUILD_ARGS...]
 
 Options:
-  -h, --help              Show this help message and exit
-  -s, --service NAME      Stop a specific service (can be repeated)
-  -t, --timeout SECONDS   Shutdown timeout in seconds before sending SIGKILL (default: 10)
+  -h, --help          Show this help message and exit
+  -s, --service NAME  Build a specific service (can be repeated)
+  --no-cache          Build without using cache
+  --pull              Always pull a newer version of the base image
+  --push              Push service images after build
+  --quiet             Do not print progress to stdout
+
+Extra arguments after '--' are passed directly to the compose build command.
 
 Examples:
   $(basename "$0")
-  $(basename "$0") -s api
-  $(basename "$0") -s api -s worker -t 30
+  $(basename "$0") --no-cache
+  $(basename "$0") -s api -s worker
+  $(basename "$0") -- --build-arg ENV=production
+  $(basename "$0") --no-cache -s api -- --build-arg VERSION=1.2.3
 EOF
     exit 0
 }
 
 # ─── Argument parsing ─────────────────────────────────────────────────────────
 SERVICES=()
-TIMEOUT=""
+BUILD_FLAGS=()
+EXTRA_ARGS=()
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -41,11 +48,14 @@ while [[ $# -gt 0 ]]; do
             SERVICES+=("$2")
             shift 2
             ;;
-        -t|--timeout)
-            [[ -z "${2:-}" ]] && { echo "Error: --timeout requires a value"; exit 1; }
-            [[ "$2" =~ ^[0-9]+$ ]] || { echo "Error: --timeout must be a positive integer"; exit 1; }
-            TIMEOUT="$2"
-            shift 2
+        --no-cache|--pull|--push|--quiet)
+            BUILD_FLAGS+=("$1")
+            shift
+            ;;
+        --)
+            shift
+            EXTRA_ARGS=("$@")
+            break
             ;;
         *)
             echo "Error: Unknown option: $1"
@@ -63,14 +73,18 @@ if [[ "$CONTAINER_CMD" == "error" || "$COMPOSE_CMD" == "error" ]]; then
     exit 1
 fi
 
-# ─── Stop ────────────────────────────────────────────────────────────────────
-STOP_CMD=(
-    $COMPOSE_CMD stop
-    ${TIMEOUT:+--timeout "$TIMEOUT"}
+# ─── Network setup ───────────────────────────────────────────────────────────
+manage_network "$CONTAINER_CMD"
+
+# ─── Build ───────────────────────────────────────────────────────────────────
+BUILD_CMD=(
+    $COMPOSE_CMD build
+    "${BUILD_FLAGS[@]}"
+    "${EXTRA_ARGS[@]}"
     "${SERVICES[@]}"
 )
 
-echo "Running: ${STOP_CMD[*]}"
-"${STOP_CMD[@]}"
+echo "Running: ${BUILD_CMD[*]}"
+"${BUILD_CMD[@]}"
 
-echo "Containers stopped successfully!"
+echo "Build completed successfully!"

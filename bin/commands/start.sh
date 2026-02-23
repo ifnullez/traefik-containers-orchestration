@@ -1,69 +1,121 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/bash
+set -e
 
-# Ensure the script is executed with bash (not sh)
-if [ -z "${BASH_SOURCE[0]+x}" ]; then
-    echo "This script must be run with bash, not sh."
-    exit 1
-fi
+# ─── Resolve bin dir relative to this script ────────────────────────────────
+BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# Resolve the script directory (go one level up from ./bin/commands)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$BIN_DIR/container_cmd.sh"
+source "$BIN_DIR/compose_cmd.sh"
+source "$BIN_DIR/network.sh"
 
-echo "SCRIPT_DIR=$SCRIPT_DIR"
+# ─── Usage ───────────────────────────────────────────────────────────────────
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [OPTIONS] [-- UP_ARGS...]
 
-# Load helper scripts
-source "$SCRIPT_DIR/container_cmd.sh"
-source "$SCRIPT_DIR/compose_cmd.sh"
-source "$SCRIPT_DIR/network.sh"
+Options:
+  -h, --help              Show this help message and exit
+  -s, --service NAME      Start a specific service (can be repeated)
+  --build                 Build images before starting containers
+  --force-recreate        Recreate containers even if config hasn't changed
+  --no-recreate           Do not recreate containers if they already exist
+  --no-build              Do not build an image even if it's missing
+  --remove-orphans        Remove containers for services not defined in the compose file
+  --scale SERVICE=NUM     Scale a service to NUM instances (can be repeated)
+  -t, --timeout SECONDS   Shutdown timeout in seconds (default: 10)
 
-# Detect container engine and compose command
+Extra arguments after '--' are passed directly to the compose up command.
+
+Examples:
+  $(basename "$0")
+  $(basename "$0") --build
+  $(basename "$0") -s api -s worker
+  $(basename "$0") --force-recreate --remove-orphans
+  $(basename "$0") --scale worker=3
+  $(basename "$0") -s api -- --env-file .env.staging
+EOF
+    exit 0
+}
+
+# ─── Argument parsing ─────────────────────────────────────────────────────────
+SERVICES=()
+UP_FLAGS=()
+SCALE_FLAGS=()
+EXTRA_ARGS=()
+TIMEOUT=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+            usage
+            ;;
+        -s|--service)
+            [[ -z "${2:-}" ]] && { echo "Error: --service requires a value"; exit 1; }
+            SERVICES+=("$2")
+            shift 2
+            ;;
+        --build|--force-recreate|--no-recreate|--no-build|--remove-orphans)
+            UP_FLAGS+=("$1")
+            shift
+            ;;
+        --scale)
+            [[ -z "${2:-}" ]] && { echo "Error: --scale requires a value (e.g. worker=3)"; exit 1; }
+            [[ "$2" =~ ^[^=]+=([0-9]+)$ ]] || { echo "Error: --scale value must be in format SERVICE=NUM"; exit 1; }
+            SCALE_FLAGS+=("--scale" "$2")
+            shift 2
+            ;;
+        -t|--timeout)
+            [[ -z "${2:-}" ]] && { echo "Error: --timeout requires a value"; exit 1; }
+            [[ "$2" =~ ^[0-9]+$ ]] || { echo "Error: --timeout must be a positive integer"; exit 1; }
+            TIMEOUT="$2"
+            shift 2
+            ;;
+        --)
+            shift
+            EXTRA_ARGS=("$@")
+            break
+            ;;
+        *)
+            echo "Error: Unknown option: $1"
+            usage
+            ;;
+    esac
+done
+
+# ─── Resolve container/compose tooling ───────────────────────────────────────
 CONTAINER_CMD=$(get_container_cmd)
 COMPOSE_CMD=$(get_compose_cmd "$CONTAINER_CMD")
 
-# Exit if neither Podman nor Docker compose is available
 if [[ "$CONTAINER_CMD" == "error" || "$COMPOSE_CMD" == "error" ]]; then
-    echo "Neither Podman nor Docker compose is available. Exiting..."
+    echo "Error: Neither Podman nor Docker Compose is available. Exiting..."
     exit 1
 fi
 
-# List of possible compose files
-POSSIBLE_FILES=("traefik-compose.yml" "docker-compose.yml" "compose.yml")
-COMPOSE_FILE=""
-
-# Find the first available compose file
-for f in "${POSSIBLE_FILES[@]}"; do
-    if [[ -f "$f" ]]; then
-        COMPOSE_FILE="$f"
-        break
-    fi
-done
-
-# Exit if no compose file is found
-if [[ -z "$COMPOSE_FILE" ]]; then
-    echo "Error: No compose file found! Tried: ${POSSIBLE_FILES[*]}"
+# ─── Validate mutually exclusive flags ───────────────────────────────────────
+if [[ " ${UP_FLAGS[*]} " == *" --force-recreate "* && " ${UP_FLAGS[*]} " == *" --no-recreate "* ]]; then
+    echo "Error: --force-recreate and --no-recreate are mutually exclusive"
     exit 1
 fi
 
-echo "Using compose file: $COMPOSE_FILE"
+if [[ " ${UP_FLAGS[*]} " == *" --build "* && " ${UP_FLAGS[*]} " == *" --no-build "* ]]; then
+    echo "Error: --build and --no-build are mutually exclusive"
+    exit 1
+fi
 
-# Ensure the network exists (helper script handles creation if missing)
+# ─── Network setup ───────────────────────────────────────────────────────────
 manage_network "$CONTAINER_CMD"
 
-# Start services with build and detach options
-$COMPOSE_CMD -f "$COMPOSE_FILE" up --build -d
+# ─── Start ───────────────────────────────────────────────────────────────────
+UP_CMD=(
+    $COMPOSE_CMD up -d
+    "${UP_FLAGS[@]}"
+    "${SCALE_FLAGS[@]}"
+    ${TIMEOUT:+--timeout "$TIMEOUT"}
+    "${EXTRA_ARGS[@]}"
+    "${SERVICES[@]}"
+)
 
-echo "Traefik started successfully!"
+echo "Running: ${UP_CMD[*]}"
+"${UP_CMD[@]}"
 
-# structure (for reference)
-# ./bin
-# ├── commands
-# │   ├── down.sh
-# │   ├── start.sh
-# │   ├── stop.sh
-# │   ├── trust_cert.sh
-# │   ├── update_cert.sh
-# │   └── update_hosts.sh
-# ├── compose_cmd.sh
-# ├── container_cmd.sh
-# └── network.sh
+echo "Containers started successfully!"

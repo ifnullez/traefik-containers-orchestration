@@ -1,122 +1,145 @@
 SHELL := /bin/bash
-COMPOSE := $(shell ./bin/compose_cmd.sh)
+
+# ─── Resolve tooling ─────────────────────────────────────────────────────────
+COMPOSE       := $(shell ./bin/resolve_compose.sh)
+CONTAINER_CMD := $(shell ./bin/container_cmd.sh)
 
 ifeq ($(COMPOSE),error)
-	$(error Compose command not found. Install docker-compose or podman-compose)
+  $(error Compose command not found. Install docker-compose or podman-compose)
 endif
 
-# Default containers
-APP_CONTAINER := app
-DB_CONTAINER := db
-NGINX_CONTAINER := nginx
+ifeq ($(CONTAINER_CMD),error)
+  $(error Container runtime not found. Install Docker or Podman)
+endif
 
-# Colors
-GREEN := \033[0;32m
+# ─── Service names ────────────────────────────────────────────────────────────
+APP_CONTAINER   := app
+DB_CONTAINER    := db
+SERVER_CONTAINER := nginx
+
+# ─── Colors ──────────────────────────────────────────────────────────────────
+GREEN  := \033[0;32m
 YELLOW := \033[0;33m
-RED := \033[0;31m
-CYAN := \033[0;36m
-NC := \033[0m
+RED    := \033[0;31m
+CYAN   := \033[0;36m
+NC     := \033[0m
 
-# Catch commands for wp, shell, logs, exec, command
-ifneq ($(filter wp shell logs exec,$(firstword $(MAKECMDGOALS))),)
+# ─── Pass-through args for logs, shell, exec, wp ─────────────────────────────
+# Usage: make logs api    →  CMD_ARGS = api
+# Usage: make exec api ls →  CMD_ARGS = api ls
+ifneq ($(filter logs shell exec wp,$(firstword $(MAKECMDGOALS))),)
   CMD_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
   $(eval $(CMD_ARGS):;@:)
 endif
 
-.PHONY: help up down restart status logs shell exec build rebuild clean wp db nginx-reload nginx-test opcache-clear
+.PHONY: help \
+        start up stop down restart \
+        build rebuild clean \
+        status logs shell exec \
+        wp server-reload server-test opcache-clear
 
-# ==================== HELP ====================
+# ─── Help ─────────────────────────────────────────────────────────────────────
 
 help: ## Show this help
 	@echo ""
-	@echo -e "  $(CYAN)Docker Management$(NC)"
+	@echo -e "  $(CYAN)Project Container Management$(NC)"
 	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-18s$(NC) %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
+		| awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}'
+	@echo ""
+	@echo -e "  Runtime: $(CYAN)$(CONTAINER_CMD)$(NC)   Compose: $(CYAN)$(COMPOSE)$(NC)"
 	@echo ""
 
-# ==================== LIFECYCLE ====================
+# ─── Lifecycle ───────────────────────────────────────────────────────────────
 
-up: ## Start containers
-	@echo -e "$(GREEN)Starting containers...$(NC)"
-	@$(COMPOSE) up -d
-	@echo -e "$(GREEN)✓ Ready$(NC)"
+start: ## Start containers in detached mode (alias: up)
+	@./bin/commands/start.sh
 
-down: ## Stop and remove containers
-	@echo -e "$(RED)Removing containers...$(NC)"
-	@$(COMPOSE) down
+up: start ## Alias for start
+
+stop: ## Stop containers (keeps them, use 'start' to resume)
+	@./bin/commands/stop.sh
+
+down: ## Stop and remove containers (add ARGS for extra flags)
+	@./bin/commands/down.sh $(ARGS)
+
+restart: ## Restart all containers
+	@echo -e "$(YELLOW)Restarting containers...$(NC)"
+	@$(COMPOSE) restart
+	@echo -e "$(GREEN)✓ Restarted$(NC)"
+
+# ─── Build ───────────────────────────────────────────────────────────────────
+
+build: ## Build images
+	@./bin/commands/build.sh
+
+rebuild: ## Rebuild images without cache
+	@./bin/commands/build.sh --no-cache
+
+# ─── Clean ───────────────────────────────────────────────────────────────────
+
+clean: ## Remove stopped containers, dangling images, unused volumes & networks
+	@echo -e "$(RED)Cleaning up unused resources...$(NC)"
+	@./bin/commands/clean.sh
 	@echo -e "$(RED)✓ Done$(NC)"
 
-restart: ## Restart containers
-	@echo -e "$(YELLOW)Restarting...$(NC)"
-	@$(COMPOSE) restart
-	@echo -e "$(GREEN)✓ Ready$(NC)"
+clean-all: ## Full teardown: compose down -v --rmi local, then full prune
+	@echo -e "$(RED)Full teardown...$(NC)"
+	@./bin/commands/down.sh --volumes --rmi local --remove-orphans
+	@./bin/commands/clean.sh --all
+	@echo -e "$(RED)✓ Done$(NC)"
+
+# ─── Observability ───────────────────────────────────────────────────────────
 
 status: ## Show container status
 	@$(COMPOSE) ps
 
-# ==================== LOGS & SHELL ====================
-
-logs: ## Show logs (make logs [container])
+logs: ## Tail logs (make logs [SERVICE])
 	@$(COMPOSE) logs -f $(CMD_ARGS)
 
-shell: ## Open shell (make shell [container])
+# ─── Shell access ─────────────────────────────────────────────────────────────
+
+shell: ## Open shell in a container (make shell [SERVICE=app])
 	@container="$(firstword $(CMD_ARGS))"; \
 	container=$${container:-$(APP_CONTAINER)}; \
-	docker exec -it $$($(COMPOSE) ps -q $$container) /bin/sh
+	$(CONTAINER_CMD) exec -it $$($(COMPOSE) ps -q $$container) /bin/sh
 
-exec: ## Run command in container (make exec <container> <command>)
+exec: ## Run a command in a container (make exec <SERVICE> <CMD...>)
 	@container="$(firstword $(CMD_ARGS))"; \
 	if [ -z "$$container" ]; then \
-		echo -e "$(RED)Usage: make exec <container> <command>$(NC)"; \
+		echo -e "$(RED)Usage: make exec <service> <command>$(NC)"; \
 		exit 1; \
 	fi; \
 	cmd="$(wordlist 2,$(words $(CMD_ARGS)),$(CMD_ARGS))"; \
 	if [ -z "$$cmd" ]; then \
-		echo -e "$(RED)Usage: make exec <container> <command>$(NC)"; \
+		echo -e "$(RED)Usage: make exec <service> <command>$(NC)"; \
 		exit 1; \
 	fi; \
-	docker exec -it $$($(COMPOSE) ps -q $$container) $$cmd
+	$(CONTAINER_CMD) exec -it $$($(COMPOSE) ps -q $$container) $$cmd
 
-# ==================== BUILD ====================
-
-build: ## Build containers
-	@echo -e "$(GREEN)Building...$(NC)"
-	@$(COMPOSE) build
-	@echo -e "$(GREEN)✓ Done$(NC)"
-
-rebuild: ## Rebuild without cache
-	@echo -e "$(GREEN)Rebuilding...$(NC)"
-	@$(COMPOSE) build --no-cache
-	@echo -e "$(GREEN)✓ Done$(NC)"
-
-clean: ## Remove containers, volumes, images
-	@echo -e "$(RED)Cleaning...$(NC)"
-	@$(COMPOSE) down -v --rmi local
-	@docker system prune -f
-	@echo -e "$(RED)✓ Done$(NC)"
-
-# ==================== WORDPRESS ====================
+# ─── WordPress ───────────────────────────────────────────────────────────────
 
 wp: ## Run WP-CLI (make wp <command>)
 	@if [ -z "$(CMD_ARGS)" ]; then \
 		echo -e "$(RED)Usage: make wp <command>$(NC)"; \
-		echo -e "Example: make wp plugin list"; \
+		echo -e "Example: $(YELLOW)make wp plugin list$(NC)"; \
 		exit 1; \
 	fi
-	@docker exec -it $$($(COMPOSE) ps -q $(APP_CONTAINER)) wp $(CMD_ARGS) --allow-root
+	@$(CONTAINER_CMD) exec -it $$($(COMPOSE) ps -q $(APP_CONTAINER)) wp $(CMD_ARGS) --allow-root
 
-# ==================== NGINX ====================
+# ─── Server ───────────────────────────────────────────────────────────────────
 
-nginx-reload: ## Reload nginx config
-	@docker exec $$($(COMPOSE) ps -q $(NGINX_CONTAINER)) nginx -s reload
+server-reload: ## Reload nginx config without downtime
+	@$(CONTAINER_CMD) exec $$($(COMPOSE) ps -q $(SERVER_CONTAINER)) nginx -s reload
 	@echo -e "$(GREEN)✓ Nginx reloaded$(NC)"
 
-nginx-test: ## Test nginx config
-	@docker exec $$($(COMPOSE) ps -q $(NGINX_CONTAINER)) nginx -t
+server-test: ## Test nginx config validity
+	@$(CONTAINER_CMD) exec $$($(COMPOSE) ps -q $(SERVER_CONTAINER)) nginx -t
 
-# ==================== PHP ====================
+# ─── PHP ─────────────────────────────────────────────────────────────────────
 
 opcache-clear: ## Clear PHP opcache
-	@docker exec $$($(COMPOSE) ps -q $(APP_CONTAINER)) php -r "opcache_reset();" 2>/dev/null || \
-		echo -e "$(YELLOW)Opcache not enabled or already clear$(NC)"
+	@$(CONTAINER_CMD) exec $$($(COMPOSE) ps -q $(APP_CONTAINER)) \
+		php -r "opcache_reset();" 2>/dev/null \
+		|| echo -e "$(YELLOW)Opcache not enabled or already clear$(NC)"
 	@echo -e "$(GREEN)✓ Done$(NC)"
