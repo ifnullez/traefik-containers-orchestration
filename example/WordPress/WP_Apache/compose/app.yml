@@ -14,10 +14,6 @@ services:
       - ../config/msmtp/msmtprc:/etc/msmtprc:ro
     env_file:
       - ../.env
-    environment:
-      # Only this needs to be here (multiline doesn't work in .env)
-      WORDPRESS_CONFIG_EXTRA: |
-        require_once('/var/www/wp-config-extra.php');
     extra_hosts:
       - "${ROOT_URL}:host-gateway"
     networks:
