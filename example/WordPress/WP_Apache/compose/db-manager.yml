@@ -6,7 +6,6 @@ services:
       - ../.env
     networks:
       - internal
-      - traefik
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${PROJECT_NAME}_adminer.rule=Host(`db.${ROOT_URL}`)"

@@ -10,7 +10,7 @@ services:
     volumes:
       - ../html:/var/www/html
       - ../config/php/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
-      - ../config/wordpress/wp-config-extra.php:/var/www/wp-config-extra.php:ro
+      - ../config/wordpress/wp-config.php:/var/www/wp-config.php:ro
       - ../config/msmtp/msmtprc:/etc/msmtprc:ro
     env_file:
       - ../.env
@@ -22,7 +22,6 @@ services:
       - "${ROOT_URL}:host-gateway"
     networks:
       - traefik
-      - internal
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${PROJECT_NAME}.rule=Host(`${ROOT_URL}`)"

@@ -11,14 +11,10 @@ services:
       - ../html:/var/www/html
       - ../config/php/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
       - ../config/php/www.conf:/usr/local/etc/php-fpm.d/www.conf:ro
-      - ../config/wordpress/wp-config-extra.php:/var/www/wp-config-extra.php:ro
+      - ../config/wordpress/wp-config.php:/var/www/html/wp-config.php:ro
       - ../config/msmtp/msmtprc:/etc/msmtprc:ro
     env_file:
       - ../.env
-    environment:
-      # Only this needs to be here (multiline doesn't work in .env)
-      WORDPRESS_CONFIG_EXTRA: |
-        require_once('/var/www/wp-config-extra.php');
     extra_hosts:
       - "${ROOT_URL}:host-gateway"
     networks:

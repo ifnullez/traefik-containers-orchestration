@@ -7,7 +7,6 @@ services:
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
     networks:
       - internal
-      - traefik
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${PROJECT_NAME}_mailplit.rule=Host(`mail.${ROOT_URL}`)"
