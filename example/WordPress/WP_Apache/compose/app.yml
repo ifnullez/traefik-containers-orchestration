@@ -17,6 +17,7 @@ services:
     extra_hosts:
       - "${ROOT_URL}:host-gateway"
     networks:
+      - internal
       - traefik
     labels:
       - "traefik.enable=true"
